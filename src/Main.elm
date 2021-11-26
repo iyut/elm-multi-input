@@ -49,19 +49,41 @@ init _ =
 type Msg
   = NoOp String
   | RemoveRow Int
+  | AddRow
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of 
-    _ ->
+    NoOp str ->
       ( model, Cmd.none )
 
     RemoveRow id ->
       let
-          
+        newAccounts = List.filter ( \account -> not ( checkAccount id account ) ) model.accounts
       in
-      
-      ( model, Cmd.none )
+        ( { model | accounts = newAccounts }, Cmd.none )
+    
+    AddRow ->
+      let
+        newAccounts = List.append model.accounts [ ( newAccount model.accounts ) ]
+
+      in
+        ( { model | accounts = newAccounts }, Cmd.none )
+
+newAccount : List Account -> Account
+newAccount accounts = 
+  case maxId accounts of 
+    Just nextId ->
+      { id = nextId + 1, name = "", age = 0 }
+
+    Nothing ->
+      { id = 1, name = "", age = 0 }
+
+maxId : List Account -> Maybe Int
+maxId accounts =
+  accounts
+    |> List.map .id
+    |> List.maximum
 
 
 checkAccount : Int -> Account -> Bool
@@ -89,6 +111,7 @@ view model =
   div [] 
   [ text "Accounts"
   , viewRows model.accounts 
+  , button [ onClick AddRow ] [ text "-" ]
   ]
   
 viewRows : List Account -> Html Msg
@@ -102,7 +125,7 @@ viewAccount act =
   [ viewInput "text" "ID" (String.fromInt act.id) NoOp
   , viewInput "text" "Name" act.name NoOp
   , viewInput "text" "Age" (String.fromInt act.age) NoOp
-  , button [ onClick RemoveRow act.id ] [ text "-" ]
+  , button [ onClick ( RemoveRow act.id ) ] [ text "+" ]
   ]
 
 viewInput : String -> String -> String -> (String -> msg) -> Html msg
