@@ -48,9 +48,13 @@ init _ =
 
 -- UPDATE
 
+type InputType
+  = Name
+  | Age
 
 type Msg
   = NoOp String
+  | SaveInput Int InputType String
   | RemoveRow Int
   | AddRow
 
@@ -59,6 +63,20 @@ update msg model =
   case msg of 
     NoOp str ->
       ( model, Cmd.none )
+
+    SaveInput id typ str ->
+      case typ of
+        Name ->
+          let
+            newAccounts = List.map ( \account -> updateAccountName id str account ) model.accounts
+          in
+            ( { model | accounts = newAccounts }, Cmd.none )
+        
+        Age ->
+          let
+            newAccounts = List.map ( \account -> updateAccountAge id str account ) model.accounts
+          in
+            ( { model | accounts = newAccounts }, Cmd.none )
 
     RemoveRow id ->
       let
@@ -72,6 +90,28 @@ update msg model =
 
       in
         ( { model | accounts = newAccounts }, Cmd.none )
+
+
+updateAccountName : Int -> String -> Account -> Account
+updateAccountName id value account =
+  if id == account.id then
+    { account | name = value }
+  
+  else 
+    account
+
+updateAccountAge : Int -> String -> Account -> Account
+updateAccountAge id value account =
+  if id == account.id then
+    case String.toInt value of
+      Just age ->
+        { account | age = age }
+
+      Nothing ->
+        account
+  
+  else 
+    account
 
 newAccount : List Account -> Account
 newAccount accounts = 
@@ -95,6 +135,8 @@ checkAccount id act =
     True
   else 
     False
+
+
 
 -- SUBSCRIPTIONS
 
@@ -130,8 +172,8 @@ viewRowInputs act =
         [ marginBottom (px 5) ]
     ] 
     [ viewInput "text" "ID" (String.fromInt act.id) NoOp
-    , viewInput "text" "Name" act.name NoOp
-    , viewInput "text" "Age" (String.fromInt act.age) NoOp
+    , viewInput "text" "Name" act.name ( SaveInput act.id Name )
+    , viewInput "text" "Age" (String.fromInt act.age) ( SaveInput act.id Age )
     , button [ onClick ( RemoveRow act.id ) ] [ text "-" ]
     ]
 
